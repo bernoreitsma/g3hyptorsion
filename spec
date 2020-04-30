@@ -1,0 +1,11 @@
+{
+	KummerCreation.m
+	KummerArithmetic.m
+	mapKummerJacobian.m
+	JacobianPoints.m
+	heights.m
+	KummerData.m
+	HeightConstantsFunctions.m
+	PointSearch.m
+	G3HypHelp.m
+}
