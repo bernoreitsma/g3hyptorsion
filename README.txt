@@ -48,3 +48,11 @@ MAGMA-related directory of Prof. Dr. Michael Stoll:
 	http://www.mathe2.uni-bayreuth.de/stoll/magma/index.html
 genus 3 hyperelliptic curves of small discriminant over Q, hosted by Andrew V. Sutherland:
 	https://math.mit.edu/~drew/gce_genus3_hyperelliptic.txt
+
+Possible plans to improve:
+- Clean up & restructure the code to improve readability
+- Look for a way to avoid BQFs in most situations by:
+	- Choosing m such that m is a power of 2.
+	- Finding a way to check whether a point P can be halved: Find Q such that [2]Q = P.
+	- Finding a way to determine whether [n]P = 0 on K only relying on doubling.
+- Look at the checks at doesLiftToJacobian() from a geometric perspective (instead of relying on Galois Theory)
