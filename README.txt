@@ -1,5 +1,5 @@
 This package has been created by Berno Reitsma under supervision and with the essential help of dr. J.S. (Steffen) Müller.
-This implementation is the main goal of Berno's Master Thesis, available at
+This implementation is part of the goal of Berno's Master Thesis, available at
 https://fse.studenttheses.ub.rug.nl/23649/1/mMATH_2020_ReitsmaB.pdf.
 
 It contains a way to compute the rational torsion subgroup of jacobians of hyperelliptic curves of genus 3,
