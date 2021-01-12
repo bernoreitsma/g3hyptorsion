@@ -1,4 +1,6 @@
-This package has been created by Berno Reitsma under supervision and with the essential help of dr. J.S. (Steffen) Müller
+This package has been created by Berno Reitsma under supervision and with the essential help of dr. J.S. (Steffen) Müller.
+This implementation is the main goal of Berno's Master Thesis, available at
+https://fse.studenttheses.ub.rug.nl/23649/1/mMATH_2020_ReitsmaB.pdf.
 
 It contains a way to compute the rational torsion subgroup of jacobians of hyperelliptic curves of genus 3,
 based on section 11 of Prof. Dr. Michael Stoll - On the Height constant for curves of genus two; Acta Arith. 90, 183-201 (1999),
@@ -10,8 +12,7 @@ files G3Hyp.m and G3HypHelp.m, most of which is theoretically explained in
 Michael Stoll - An Explicit Theory of Heights for Hyperelliptic Jacobians of Genus Three - 
 In Algorithmic and experimental methods in algebra, geometry, and number theory, 665-715, Springer, Cham, 2017
 
-WARNING: The code, in its current state, is not well-structured and lacks a lot of documentation.
-Also, the Verbose printing likely retursn lots of errors. This is still work in progress.
+WARNING: some of the Verbose printing on supporting functionality may return errors.
 
 Important files are:
 - torsion3.m contains the functions that compute the rational torsion subgroup of jacobians of hyperelliptic curves of genus 3.
@@ -49,10 +50,4 @@ MAGMA-related directory of Prof. Dr. Michael Stoll:
 genus 3 hyperelliptic curves of small discriminant over Q, hosted by Andrew V. Sutherland:
 	https://math.mit.edu/~drew/gce_genus3_hyperelliptic.txt
 
-Possible plans to improve:
-- Clean up & restructure the code to improve readability
-- Look for a way to avoid BQFs in most situations by:
-	- Choosing m such that m is a power of 2.
-	- Finding a way to check whether a point P can be halved: Find Q such that [2]Q = P.
-	- Finding a way to determine whether [n]P = 0 on K only relying on doubling.
-- Look at the checks at doesLiftToJacobian() from a geometric perspective (instead of relying on Galois Theory)
+If a comment in the code references a section, theorem, lemma, etc, this refers to my Master's Thesis.

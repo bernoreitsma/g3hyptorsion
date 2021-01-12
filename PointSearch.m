@@ -6,6 +6,9 @@ mapped to K and reduced modulo p result in P on K over F_p.
 	FindRationalPoints: Given curve C, P on the Kummer Variety associated with C, reduced mod p,
 						computes on all rational points on J that have a point on K that reduces mod p
 						to P.
+This functionality is a good, fast method to compute rational points within a certain height, but
+unless the parameter "count" is put to 7, it is not guaranteed to return all possible points, due
+to computational difficulty in Lattice Reduction algorithms (Remark 5.1).
 */
 
 Attach("G3HypHelp.m");
