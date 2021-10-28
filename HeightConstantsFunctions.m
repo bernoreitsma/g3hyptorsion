@@ -136,4 +136,4 @@ intrinsic HeightConstantG3(J::JacHyp) -> FldReElt, FldReElt
                      1/3*Log(Max([Abs(t) : t in &cat[Coefficients(d) : d in deltas]])));
     J`HeightConst := <hc_finite + hc_inf, hc_inf_both>;
     return hc_finite + hc_inf, hc_inf_both;
-end intrinsic;s
+end intrinsic;
