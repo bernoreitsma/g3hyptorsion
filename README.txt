@@ -51,3 +51,6 @@ genus 3 hyperelliptic curves of small discriminant over Q, hosted by Andrew V. S
 	https://math.mit.edu/~drew/gce_genus3_hyperelliptic.txt
 
 If a comment in the code references a section, theorem, lemma, etc, this refers to my Master's Thesis.
+
+NOTE:
+There is an issue with the computation of 2-torsion points. This means that the actual rational 2-torsion group may be larger than suggested by the current code. We have hidden the current results. If you still want to check out the results with this warning in mind, you can check out the commit history.
