@@ -2,31 +2,114 @@ AttachSpec("spec");
 import "heights.m": normalize;
 import "transformations.m": KummerTransformation;
 
+
+function degree4candidates(f, K)
+  // f is a squarefree polynomial of degree 8 over the rationals
+  // K is a quadratic subfield of the etale algebra Q[x]/<f>
+  //
+  // Find all degree 4 divisors h of f over K such that
+  // f and f^sigma are coprime, where Gal(K/Q) = <sigma>
+  // These give rise to 2-torsion points in Jac(C)(Q).
+  
+  fK := ChangeRing(f, K);
+  sigma := Automorphisms(K)[2];
+  assert sigma(K.1) ne K.1;
+
+  function conj(h)
+    xK := Parent(fK).1;
+    return &+[sigma(Coefficient(h, i)) * xK^i : i in [0..Degree(h)]];
+  end function;
+
+  primes := [h : h in PrimeDivisors(fK) | not &and[sigma(c) eq c : c in Coefficients(h)]];
+  candidates := [h : h in primes | Degree(h) eq 4];
+  factors3 := [h : h in primes | Degree(h) eq 3];
+  factors2 := [h : h in primes | Degree(h) eq 2];
+  factors1 := [h : h in primes | Degree(h) eq 1];
+  for h3 in factors3 do 
+    for h1 in factors1 do 
+      Append(~candidates, h3*h1);
+    end for;
+  end for;
+  for h2 in factors2 do 
+    for g2 in factors2 do 
+      if g2 notin [h2, conj(h2)] then
+        Append(~candidates, h2*g2);
+      end if;
+    end for;
+    for i in [1..#factors1] do
+      for j in [i+1..#factors1] do
+        Append(~candidates, h2*factors1[i]*factors1[j]);
+      end for;
+    end for;
+  end for;
+  for i in [1..#factors1] do
+    for j in [i+1..#factors1] do
+      for k in [j+1..#factors1] do
+        for l in [k+1..#factors1] do
+          Append(~candidates, factors1[i]*factors1[j]*factors1[k]*factors1[l]);
+        end for;
+      end for;
+    end for;
+  end for;
+  assert &and[Degree(h) eq 4 : h in candidates];
+  //"candidates", candidates;
+  return [h : h in candidates | Degree(GCD(h, conj(h))) eq 0];
+end function;
+
 // counts the number of generators of the rational 2-torsion subgroup (Section 5.6)
-function counttwotorsiongens(J)
+// bound is an upper bound on the number of generators.
+function counttwotorsiongens(J : bound := 0)
     C := Curve(J);
+    assert Genus(C) eq 3;
     f,h := HyperellipticPolynomials(C);
     assert h eq 0;
-	fact := Factorization(f); // f is now of degree 8.
-	fact1 := [ pair[1] : pair in fact | Degree(pair[1]) eq 1 ];
+    if Degree(f) eq 7 then
+      G := myTwoTorsionSubgroup(J);
+      return Ngens(G);
+    end if;
+    fact := Factorization(f); // f is now of degree 8.
+    fact1 := [ pair[1] : pair in fact | Degree(pair[1]) eq 1 ];
     fact2 := [ pair[1] : pair in fact | Degree(pair[1]) eq 2 ];
     fact3 := [ pair[1] : pair in fact | Degree(pair[1]) eq 3 ];
     fact4 := [ pair[1] : pair in fact | Degree(pair[1]) eq 4 ];	
-	gensct := 0;
-	gensct +:= (#fact1 ge 2) select #fact1 - 1 else 0;
-	gensct +:= #fact2;
-	gensct +:= (#fact1 ne 0) select #fact3  else 0;
-	gensct +:= #fact4;
+    gensct := 0;
+    gensct +:= (#fact1 ge 2) select #fact1 - 1 else 0;
+    gensct +:= #fact2;
+    gensct +:= (#fact1 ne 0) select #fact3  else 0;
+    gensct +:= #fact4;
     if #fact1 + 2*#fact2 + ((#fact1 ge 1) select 3*#fact3 else 0) 
                 + 4*#fact4 eq Degree(f) then gensct -:= 1; end if;
-	return gensct;
+    //"gensct", gensct;
+    ttct := 2^gensct; // jsm: changed dimension to order to avoid issues below.
+    // jsm: added 05-05-22
+    // Count points corresponding to (4,4) partitions of roots of f
+    // conjugate over a quadratic field
+    // The candidate fields are components of the etale algebra of f
+    A := AbsoluteAlgebra(quo<Parent(f) | f>);
+    quadratic_fields := [];
+
+    for i := 1 to NumberOfComponents(A) do
+      for pair in Subfields(A[i]) do
+        if Degree(pair[1]) eq 2 then
+          K := pair[1]; 
+          if &and[not IsIsomorphic(K, L) : L in quadratic_fields] then
+            Append(~quadratic_fields, K);
+            candidates := SequenceToSet(degree4candidates(f, K)); 
+            ttct +:= #candidates div 2; 
+            // If f = g*h, then g and h give rise to the same point
+          end if;
+        end if;
+      end for;
+    end for;
+    val2:= Valuation(ttct, 2);
+    return val2;
 end function;
 
-// Explicitly computes the rational 2-torsion subgroup for 
+// Explicitly computes the rational 2-torsion subgroup 
 intrinsic myTwoTorsionSubgroup(J::JacHyp) -> GrpAb, Map
 {The rational 2-torsion subgroup of J for curves of genus 2 in simplified model.}
     if assigned J`TwoTorsion then 
-        return J`TwoTorsion[1], J`TwoTorsion[2];
+        return J`TwoTorsion[1], J`TwoTorsion[2], J`TwoTorsion[3];;
     end if;
     C := Curve(J);
     require Degree(C) mod 2 eq 1 or Genus(C) le 4:
@@ -44,16 +127,20 @@ intrinsic myTwoTorsionSubgroup(J::JacHyp) -> GrpAb, Map
         iso := map< G -> J | g :-> &+[J | s[i]*gens[i] : i in [1..#s]]
                                                     where s := Eltseq(g) >;
         J`TwoTorsion := <G, iso, L>;
-        return G,iso;
+        return G,iso,L;
     end if;
     
     // this part is added for genus 3, degree 8 curves. (Section 5.8)
+    // Currently we never get here.
     if Genus(C) eq 3 then
         f,h := HyperellipticPolynomials(C);
-	  	require h cmpeq 0:
-	  	  "TwoTorsionSubgroup requires a curve in the form y^2 = f(x)";
-	  	fact := Factorization(f); // f is now of degree 8.
-	  	fact1 := [ pair[1] : pair in fact | Degree(pair[1]) eq 1 ];
+        require h cmpeq 0:
+          "TwoTorsionSubgroup requires a curve in the form y^2 = f(x)";
+        require IsSquare(LeadingCoefficient(f)):
+          "TwoTorsionSubgroup requires rational points at infinity", 
+          "when the genus is odd.";
+        fact := Factorization(f); // f is now of degree 8.
+        fact1 := [ pair[1] : pair in fact | Degree(pair[1]) eq 1 ];
         fact2 := [ pair[1] : pair in fact | Degree(pair[1]) eq 2 ];
         fact3 := [ pair[1] : pair in fact | Degree(pair[1]) eq 3 ];
         fact4 := [ pair[1] : pair in fact | Degree(pair[1]) eq 4 ];
@@ -72,13 +159,43 @@ intrinsic myTwoTorsionSubgroup(J::JacHyp) -> GrpAb, Map
                 + 4*#fact4 eq Degree(f) then 
             Prune(~gens); 
         end if;
+        // jsm: added 05-05-22
+        // Find points corresponding to (4,4) partitions of roots of f
+        // conjugate over a quadratic field
+        // The candidate fields are components of the etale algebra of f
+        A := AbsoluteAlgebra(quo<Parent(f) | f>);
+        quadratic_fields := [];
         L := [ J!0 ];
+        for i := 1 to NumberOfComponents(A) do
+          for pair in Subfields(A[i]) do
+            if Degree(pair[1]) eq 2 then
+              K := pair[1]; 
+              if &and[not IsIsomorphic(K, L) : L in quadratic_fields] then
+                Append(~quadratic_fields, K);
+                candidates := degree4candidates(f, K); 
+                JK := BaseChange(J, K);
+                pts := SequenceToSet([J!(JK![cand, 0]) : cand in candidates]);
+                L cat:= [pt : pt in pts | pt notin L];
+              end if;
+            end if;
+          end for;
+        end for;
+        L := SetToSequence(SequenceToSet(L)); // remove duplicates
+        additional := Valuation(#L, 2);
+
+        //L := [ J!0 ];
         for g in gens do L cat:= [ g + pt : pt in L ]; end for;
-            G<[P]> := AbelianGroup([ 2 : i in [1..#gens] ]);
-            iso := map< G -> J | g :-> &+[J | s[i]*gens[i] : i in [1..#s]]
-                                     where s := Eltseq(g) >;
-            J`TwoTorsion := <G, iso, L>;
-        return G, iso;    
+        L := SetToSequence(SequenceToSet(L));
+        // To Do: Determine generators and return correct iso
+        // This is currently wrong.
+        // Either find theoretical description of generators
+        // or do linear algebra
+        G<[P]> := AbelianGroup([ 2 : i in [1..Valuation(#L, 2)] ]);
+        gens cat:= [L[i] : i in [1..additional]];
+        iso := map< G -> J | g :-> &+[J | s[i]*gens[i] : i in [1..#s]]
+                                 where s := Eltseq(g) >;
+        J`TwoTorsion := <G, iso, L>;
+        return G, iso, L;    
     end if;
 
     assert Genus(C) eq 2;
@@ -105,7 +222,7 @@ intrinsic myTwoTorsionSubgroup(J::JacHyp) -> GrpAb, Map
     iso := map< G -> J | g :-> &+[J | s[i]*gens[i] : i in [1..#s]]
                                where s := Eltseq(g) >;
     J`TwoTorsion := <G, iso, L>;
-    return G, iso;
+    return G, iso, L;
 end intrinsic;
 
 // The algorithm used in this function can be found on
@@ -167,14 +284,14 @@ function myLiftTorsionPoint(P, C, b, B: transmat := [1,0,0,1])
         K := KummerVarietyG3(C);
         Kp := KummerVarietyG3(Dp);
         PKp := ToKummerVariety(P);
-        for i := 2 to #tt do
+        for i := 1 to #tt do // jsm: changed i:=2 to i:=1
             ttes := Eltseq(ToKummerVariety(tt[i]));
             integral_P := normalize(ttes);
             if Kp!ChangeUniverse(integral_P, GF(p)) eq Kp!Eltseq(PKp) then return true, tt[i]; end if;
         end for;
         return false, _;
     end if;
-    // Decide on the integer m used as [[m]]R in Step 3.3. doubleflag decides whether [[m]]R can be
+    // Decide on the integer m used as [[m]]R in Step 4c. doubleflag decides whether [[m]]R can be
     // achieved through repeated doubling (Section 4.7)
     if n mod 2 eq 0 then
         m := 1 - n; // smallest m congruent to 1 mod n
@@ -205,7 +322,7 @@ function myLiftTorsionPoint(P, C, b, B: transmat := [1,0,0,1])
                    cat [p,0,0,0,0,0,0,0, 0,p,0,0,0,0,0,0, 0,0,p,0,0,0,0,0, 0,0,0,p,0,0,0,0,
                         0,0,0,0,p,0,0,0, 0,0,0,0,0,p,0,0, 0,0,0,0,0,0,p,0, 0,0,0,0,0,0,0,p]);
     app := Eltseq(Basis(L)[1]);
-    while prec lt b do // This iterates Step 3.
+    while prec lt b do // This iterates Step 4.
         // next lift
         newprec := Min(2*prec,b);
         oldF := F;
@@ -255,6 +372,11 @@ function myLiftTorsionPoint(P, C, b, B: transmat := [1,0,0,1])
                             0,0,0,0,q,0,0,0, 0,0,0,0,0,q,0,0, 0,0,0,0,0,0,q,0, 0,0,0,0,0,0,0,q]);
         app1 := Eltseq(Basis(L)[1]);
         if app eq app1 and IsPointOnKummer(C, app1) then
+            ht := Max([Height(c) : c in Eltseq(app)]);
+            if ht gt B then 
+                // Height too large for a torsion point.
+                return false, _; 
+            end if;
             PQ := K!app1;
             if Multiple(C, n, PQ) eq KummerOrigin(C) then	
                 if Degree(f) eq 7 then
@@ -273,11 +395,18 @@ function myLiftTorsionPoint(P, C, b, B: transmat := [1,0,0,1])
     end while;
     // Step 5-7
 	// now prec = b. Check if found
+    ht := Max([Height(c) : c in Eltseq(app)]);
+    if ht gt B then 
+        // Height too large for a torsion point.
+        return false, _; 
+    end if;
     if not IsPointOnKummer(C, app) then 
+        //"Point not on Kummer";
         return false, _; 
     end if;
 	PQ := K!app;
     if Multiple(C, n, PQ) ne KummerOrigin(C) then 
+        //"not torsion";
         return false, _; 
     end if;
     // for the time being, explicit generators are only computed for odd degree.
@@ -332,8 +461,31 @@ intrinsic myTorsionSubgroup(J::JacHyp)
         Jtransinv := map<JD -> J | P :-> Evaluate(transinv, P)>;*/
         return G; //, iso*Jtransinv;
     end if;
-    bound := HeightConstantG3(J);
+
+
+    // Else we  prefer an even degree model with rational points 
+    // at infinity
+    if flaglt then
+        // By the above, there are no rational Weierstrass points
+        pts := Points(C : Bound := 1000);
+        if #pts gt 0 then 
+            x1 := Eltseq(pts[1])[1];
+            mat := [Rationals() |0,1,1,-x1];
+            D, trans := Transformation(C, mat);
+            DS, DStrans := SimplifiedModel(D);
+            DI, DItrans := IntegralModel(DS);
+            D := DI; trans := trans * DStrans * DItrans;
+            JD := Jacobian(D);
+            vprint JacHypTorsion: "Considering isomorphic model with rational points at infinity...";
+            G := myTorsionSubgroup(JD);
+            return G;
+        end if;
+    end if;
+
+    bound := HeightConstantG3(J : eps := 0.01);
     // This bounds the logarithmic naive height of the torsion points
+    // jsm: made eps smaller. This leads to a significant speed-up
+    // at a small loss.
     vprint JacHypTorsion: " Height Constant =",bound;
     Bound := Exp(bound);           // non-log height bound
     // changed in order to be safe for now.
@@ -348,6 +500,8 @@ intrinsic myTorsionSubgroup(J::JacHyp)
     ed := [];      // elementary divisors
     gL := [ J | ]; // generators
     ttc := counttwotorsiongens(J); // if no unique representation exists, we compute implicitly now.
+    ttc0 := ttc;
+    
     // compute q-part of torsion subgroup. (Algorithm 4.20)    
     for pair in fact do
         q := pair[1];
@@ -383,6 +537,7 @@ intrinsic myTorsionSubgroup(J::JacHyp)
                 x1 := Eltseq(pts[1])[1];
                 mat := [GF(p) |0,1,1,-x1];
                 Dp, _ := Transformation(Cp, mat);
+                //"Dp", Dp;
                 JDp := Jacobian(Dp);
             end if;
         end if;
@@ -406,6 +561,7 @@ intrinsic myTorsionSubgroup(J::JacHyp)
         Gcurr, qmap := quo<Gp | Tcurr>;
         S0 := { Gcurr | 0 };
         S1 := Set(Gcurr) diff S0;
+        lift_info := [* *];
         while not IsEmpty(S1) do    // run through reduced points on J(F_p)
             vprint JacHypTorsion:
                "    Current subgroup has invariants", Invariants(Tcurr);
@@ -423,20 +579,39 @@ intrinsic myTorsionSubgroup(J::JacHyp)
                 gl := gg @@ qmap; // Some preimage in Gp
                 pt := mp(gl);     // and the corresponding point on J(F_p)
                 // here, we stop trying if gg in J[2] and compute J[2] separately.
-                if flaglt and Order(pt) eq 2 then
-                    flag := true;
-                    vprint JacHypTorsion: "     2-torsion determined without lifting";
-                else
-                    vprint JacHypTorsion: "     Trying to lift point",pt,"...";
-                    vprintf JacHypTorsion, 2:
-                        "     Image on Kummer surface = %o\n", ToKummerVariety(pt);
+                // jsm: added check: already known whether pt lifts?
+                i := Index([t[1] : t in lift_info], pt);
+                if i gt 0  then // pt already done
+                    flag := lift_info[i, 2];
+                    if #lift_info[i] eq 3 then
+                        lift := #lift_info[i, 3];
+                    end if;
+                else 
+
+                    if flaglt and Order(pt) eq 2 then
+                        flag := true;
+                        vprint JacHypTorsion: "     2-torsion determined without lifting";
+                        Append(~lift_info, <pt, flag>);
+                    else
+                        vprint JacHypTorsion: "     Trying to lift point",pt,"...";
+                        vprintf JacHypTorsion, 2:
+                            "     Image on Kummer surface = %o\n", ToKummerVariety(pt);
+                    end if;
+                    tt := Cputime();
+                    //"Order(pt)", Order(pt); "pt", pt;
+                    //Parent(pt);
+                    if flaglt and Order(pt) ne 2 then
+                        flag := myLiftTorsionPoint(pt, C, pbound, Bound: transmat := mat);
+                        Append(~lift_info, <pt, flag>);
+                    elif not flaglt then
+                        flag, lift := myLiftTorsionPoint(pt, C, pbound, Bound);
+                        if assigned lift then
+                            Append(~lift_info, <pt, flag, lift>);
+                        else 
+                            Append(~lift_info, <pt, flag>);
+                        end if;
+                    end if;          
                 end if;
-                tt := Cputime();
-                if flaglt and Order(pt) ne 2 then
-                    flag := myLiftTorsionPoint(pt, C, pbound, Bound: transmat := mat);
-                elif not flaglt then
-                    flag, lift := myLiftTorsionPoint(pt, C, pbound, Bound);
-                end if;          
                 tlift +:= Cputime(tt);
                 if flag and Degree(f) eq 7 then 
                     vprintf JacHypTorsion: "     Point lifts";
@@ -546,9 +721,10 @@ intrinsic myTorsionSubgroup(J::JacHyp)
         vprintf JacHypTorsion: "Time used for lifting: %o ms\n", Round(1000*tlift);
         vprintf JacHypTorsion: "Total time:            %o ms\n\n", Round(1000*t);
         return G, iso;
-    else //Degree(f) eq 7
+    else 
+        assert ttc0 eq #[n : n in ed | IsEven(n)];
         return G;
-    end if;
+    end if; //Degree(f) eq 7
 end intrinsic;
 
 
