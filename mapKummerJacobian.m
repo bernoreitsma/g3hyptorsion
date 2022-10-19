@@ -171,12 +171,16 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
         y1y2_t_2 := xiseq[8]/xiseq[2] * Da + Gx1x2;
         sumy1y2sq := f8*sumx1x2[8] + f7*sumx1x2[7] + f6*sumx1x2[6] + f5*sumx1x2[5]
             + f4*sumx1x2[4] + f3*sumx1x2[3] + f2*sumx1x2[2] + f1*sumx1x2[1] + 2*f0;
+        if not IsSquare(sumy1y2sq + y1y2_t_2) then return false; end if;
+        // need y1+y2 in k, so y_1^2 + y_2^2 + 2*y1y2
         Db := sumy1y2sq - y1y2_t_2; // y_1^2 + y_2^2 - 2*y1y2
-        if not IsSquare(Db) then
-            return false;
-        end if;
+        //"Da=", Da; "Db=", Db;
+        if Da eq 0 then return true; end if;
+        return IsSquare(Db/Da);
+        /*
         issqda := IsSquare(Da);
         issqdb := IsSquare(Db);
+        
         if issqda and issqdb then
             return true;
         elif (not issqda) and issqdb then
@@ -184,22 +188,13 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
         elif (not issqdb) and issqda then
             return Da eq 0;
         else
-            sqfpDa := 1;
-            sqfpDb := 1;
-            for d in Factorization(Abs(Da)) do
-                if d[2] mod 2 eq 0 then
-                    continue;
-                end if;
-                sqfpDa *:= d[1];
-            end for;
-            for d in Factorization(Abs(Db)) do
-                if d[2] mod 2 eq 0 then
-                    continue;
-                end if;
-                sqfpDb *:= d[1];
-            end for;		
-            return sqfpDa eq sqfpDb and Sign(Da) eq Sign(Db);
+            R<x> := PolynomialRing(Rationals());
+            quadr_a := NumberField(x^2 - Da);
+            quadr_b := NumberField(x^2 - Db);
+            is_isomorphic, _ := IsIsomorphic(quadr_a, quadr_b);
+	    return is_isomorphic;
         end if;
+        */
     else
     assert xiseq[3] eq 0 and xiseq[4] eq 0;
     if xiseq[5] eq 0 then
@@ -247,7 +242,6 @@ on the Jacobian of C that map to P.}
       ss := Setseq(s);
       submat := Matrix([[mat[i,j] : j in ss] : i in ss]);
       minor := Determinant(submat);
-      
       if minor ne 0 then
         // sqrtmin is mu as defined in [3] eqn (4.1)
         flag, sqrtmin := IsSquare(-1/2*minor*twist);
