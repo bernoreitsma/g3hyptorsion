@@ -99,7 +99,7 @@ end intrinsic;
 
 /* This computes a height bound \beta such as in (Theorem 3.15)*/
 
-intrinsic HeightConstantG3(J::JacHyp) -> FldReElt, FldReElt
+intrinsic HeightConstantG3(J::JacHyp : eps := 0.0001) -> FldReElt, FldReElt
 {If J is the Jacobian of a genus 3 curve defined over the rationals,
  of the form  y^2 = f(x)  with integral coefficients, this computes
  a real number c such that  h_K(P) le h(P) + c  for all P in J(Q),
@@ -117,7 +117,7 @@ intrinsic HeightConstantG3(J::JacHyp) -> FldReElt, FldReElt
         return J`HeightConst[1], J`HeightConst[2];
     end if;
     vprintf JacHypHeight, 1: "Find height constant for J =\n%o\n", J;
-    hc_inf := HeightConstAtInfty(f); // Height constant at infinity
+    hc_inf := HeightConstAtInfty(f : eps := eps); // Height constant at infinity
     vprintf JacHypHeight, 1: " Bound for height constant at infinity:\n";
     vprintf JacHypHeight, 1: "   %o\n", hc_inf;
 	// Now find a bound for the finite part
