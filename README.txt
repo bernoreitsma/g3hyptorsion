@@ -1,7 +1,7 @@
 
 This package has been created by Berno Reitsma under supervision and with the essential help of Steffen Müller.
-It contains an implementation of an algorithm to compute the rational torsion subgroup of Jacobians of hyperelliptic curves 
-of genus 3 in the MAGMA Computational Algebra System. (See link below)
+It contains an implementation of an algorithm to compute the rational torsion subgroup of Jacobians of hyperelliptic 
+curves of genus 3 in the MAGMA Computational Algebra System. (See link below)
 
 This implementation is part of the goal of Berno's Master's Thesis, available at
 https://fse.studenttheses.ub.rug.nl/23649/1/mMATH_2020_ReitsmaB.pdf. 
