@@ -133,6 +133,7 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
 {Decides whether a point lifts to the jacobian or not}
     Ct := twist eq 1 select C else QuadraticTwist(C, twist);
     xiseq := Eltseq(P);
+    //"P", P;
     f := HyperellipticPolynomials(C);
 	f0, f1, f2, f3, f4, f5, f6, f7, f8 := Explode(Coefficients(f));
     Pol := Parent(f);
@@ -205,13 +206,9 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
             return #PointsAtInfinity(C) eq 2;
         end if;
         else // degree one affine point
-            if xiseq[6] eq 0 then
-                assert xiseq[7] eq 0;
-                return true; // x1 = 0
-            else
-                x0 := -xiseq[6]/xiseq[5];
-                return IsSquare(Evaluate(f*twist, x0)), _;	// x1 neq 0
-            end if;
+            // jsm: modified 24-10-22
+            x0 := -xiseq[6]/xiseq[5];
+            return IsSquare(Evaluate(f*twist, x0));
         end if;					
     end if;
 end intrinsic;
