@@ -375,6 +375,7 @@ function myLiftTorsionPoint(P, C, b, B: transmat := [1,0,0,1])
             ht := Max([Height(c) : c in Eltseq(app)]);
             if ht gt B then 
                 // Height too large for a torsion point.
+                "too large";
                 return false, _; 
             end if;
             PQ := K!app1;
@@ -428,7 +429,7 @@ This function translates almost immediately to the genus 3 case, but
 there are some issues for curves where Jacobian arithmetic is not implemented.*/
 
 // Algorithm 4.22.
-intrinsic myTorsionSubgroup(J::JacHyp)
+intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 10)
     -> GrpAb, Map
 {Finds the rational torsion subgroup of J. The curve of J must have genus 2
  and be defined over the rationals and have form  y^2 = f(x)  with integral 
@@ -492,7 +493,7 @@ intrinsic myTorsionSubgroup(J::JacHyp)
     bound1 := Log(2048.0) + 2*bound; // logarithmic bound for p-adic precision (section 4.4).
     // Get a bound for the order of the torsion subgroup
     //  (by looking at the reduction at a few good primes).
-    tb := TorsionBound(J, 10);
+    tb := TorsionBound(J, torsion_bound);
     tb1 := J`TorsionBound[3];
     fact := Factorization(tb);
     vprintf JacHypTorsion: " Torsion Bound = %o, factored: %o\n",tb,fact;
@@ -598,8 +599,7 @@ intrinsic myTorsionSubgroup(J::JacHyp)
                             "     Image on Kummer surface = %o\n", ToKummerVariety(pt);
                     end if;
                     tt := Cputime();
-                    //"Order(pt)", Order(pt); "pt", pt;
-                    //Parent(pt);
+                    //"Order(pt)", Order(pt); "pt", pt;// "3*pt", 3*pt;
                     if flaglt and Order(pt) ne 2 then
                         flag := myLiftTorsionPoint(pt, C, pbound, Bound: transmat := mat);
                         Append(~lift_info, <pt, flag>);
