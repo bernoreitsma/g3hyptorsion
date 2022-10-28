@@ -3,7 +3,7 @@ Attach("torsion3.m");
 Attach("transformations.m");
 
 input := Open("gce_genus3_hyperelliptic.txt", "r");
-output := Open("output.txt", "w");
+output := Open("output_100.txt", "w");
 
 S<x> := PolynomialRing(Rationals());
 
@@ -11,6 +11,7 @@ lc := 0;
 
 groups := [];
 curves := [];
+bigger := [];
 
 while true do
 	lc +:= 1;
@@ -23,11 +24,17 @@ while true do
 	seppols := Split(pols, ",");
 	f, h := Explode([eval seppols[1], eval seppols[2]]);
 	C := SimplifiedModel(HyperellipticCurve(f, h));
+        bad := BadPrimes(C);
+        nprimes := #[p : p in PrimesInInterval(2,100) | p notin bad];
 	J := Jacobian(C);
+        tb := TorsionBound(J, nprimes);
 	G:= myTorsionSubgroup(J);
         invs := InvariantFactors(G);
-        ind := Index(groups, invs);
         f := HyperellipticPolynomials(C);
+        if #G lt tb then
+          Append(~bigger, <f, tb, #G, invs>);
+        end if;
+        ind := Index(groups, invs);
         if invs notin groups then
           Append(~groups, invs);
           Append(~curves, [f]);
@@ -79,11 +86,11 @@ end for;
       
 
 
-
-fprintf output, " //groups: \n groups := %o\n\n", groups;
-fprintf output, " //curves: \n curves := %o\n\n", curves;
-fprintf output, " //numbers of curves: \n curves_count := %o\n\n", curves_count;
-fprintf output, " //group structures showing up for geometrically simple Jacobians: \n simple := %o\n\n", simple;
-fprintf output, " //group structures showing up for Jacobians that are not known to be geometrically simple: \n probably_split := %o\n\n", split;
-fprintf output, " //group structures showing up only for geometrically simple Jacobians: \n only_simple := %o\n\n", only_simple;
-fprintf output, "//group structures showing up only for Jacobians that are not known to be geometrically simple: \n only_probably_split := %o\n\n", only_split;
+fprintf output, " //groups: \n groups := %o;\n\n", groups;
+fprintf output, " //curves: \n curves := %o;\n\n", curves;
+fprintf output, " //numbers of curves: \n curves_count := %o;\n\n", curves_count;
+fprintf output, " //group structures showing up for geometrically simple Jacobians: \n simple := %o;\n\n", simple;
+fprintf output, " //group structures showing up for Jacobians that are not known to be geometrically simple: \n probably_split := %o;\n\n", split;
+fprintf output, " //group structures showing up only for geometrically simple Jacobians: \n only_simple := %o;\n\n", only_simple;
+fprintf output, "//group structures showing up only for Jacobians that are not known to be geometrically simple: \n only_probably_split := %o;\n\n", only_split;
+fprintf output, " //bigger: \n bigger := %o;\n\n", bigger;
