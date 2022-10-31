@@ -105,6 +105,77 @@ function counttwotorsiongens(J : bound := 0)
     return val2;
 end function;
 
+
+intrinsic myTorsionBound(J::JacHyp, n::RngIntElt) -> RngIntElt, SeqEnum
+{
+ Returns an upper bound on the order of the rational torsion
+ subgroup of the Jacobian of a hyperelliptic curve over the rationals,
+ obtained by reducting modulo the first n odd primes of good reduction.
+ In contrast to TorsionBound, this takes into account the group
+ structure of the reduced Jacobians, not only the order.}
+
+//    if assigned J`TorsionBound and
+//     (J`TorsionBound[2] ge n or J`TorsionBound[1] eq 1) then
+//      return J`TorsionBound[1];
+//    end if;
+    C := Curve(J);
+    require n ge 1: "myTorsionBound needs at least one prime to be considered.";
+    f, h := HyperellipticPolynomials(C);
+    disc := LCM([Numerator(Discriminant(C))] cat [Denominator(c) : c in Eltseq(h) cat Eltseq(f)]);
+    K := CoefficientRing(C);
+    require K cmpeq Rationals(): "Curve needs to be define over the rationals";
+    if assigned J`TorsionBound then
+      bound := J`TorsionBound[1];
+      plist := J`TorsionBound[3];
+      p := plist[#plist][1];
+      s := J`TorsionBound[2]+1; // index of next element of pl to look at
+    else
+      bound := 0;
+      plist := [];
+      p := 2; 
+      s := 1;
+    end if;
+    factors := [];
+    for i := s to n do p := NextPrime(p);
+      while disc mod p eq 0 do p := NextPrime(p); end while;
+      try 
+        group := AbelianGroup(BaseExtend(J, FiniteField(p)));
+      catch e;
+        // No addition algorithm on reduced Jacobian
+        // Change the model by sending a point to infinity, if possible.
+        Cp := ChangeRing(C, GF(p));
+        bool, Dp := HasOddDegreeModel(Cp);
+        if bool then
+          group := AbelianGroup(Jacobian(Dp));
+        else 
+          ptsC := Points(Cp);
+          if #ptsC eq 0 then 
+           /vprint JacHypTorsion: "No points on curve over Fp, can't compute group structure; skipping prime", p;
+            continue; 
+          end if; 
+          // Now send a non-Weierstrass point to infinity.
+          // All points in ptsC are necessarily affine, else we'd never 
+          // get here.
+          x1 := Eltseq(ptsC[1])[1]; 
+          mat := [GF(p) |0,1,1,-x1];
+          Dp := Transformation(Cp, mat);
+          group := AbelianGroup(Jacobian(Dp));
+        end if;
+      end try;
+      Append(~factors, InvariantFactors(group));
+      bound := Gcd(bound, #group);
+      Append(~plist, <p, #group, factors>);
+      if bound eq 1 then break; end if;
+    end for;
+    inv_factors := [];
+    N := Min([#t : t in factors]);
+    for i := 1 to N do
+      inv_factors[i] := GCD([t[#t-N+i] : t in factors]);
+    end for;
+    J`TorsionBound := <&*inv_factors, #plist, plist, inv_factors, factors>;
+    return &*inv_factors;
+end intrinsic;
+
 // Explicitly computes the rational 2-torsion subgroup 
 intrinsic myTwoTorsionSubgroup(J::JacHyp) -> GrpAb, Map
 {The rational 2-torsion subgroup of J for curves of genus 2 in simplified model.}
@@ -429,7 +500,7 @@ This function translates almost immediately to the genus 3 case, but
 there are some issues for curves where Jacobian arithmetic is not implemented.*/
 
 // Algorithm 4.22.
-intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 10)
+intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
     -> GrpAb, Map
 {Finds the rational torsion subgroup of J. The curve of J must have genus 2
  and be defined over the rationals and have form  y^2 = f(x)  with integral 
@@ -493,8 +564,8 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 10)
     bound1 := Log(2048.0) + 2*bound; // logarithmic bound for p-adic precision (section 4.4).
     // Get a bound for the order of the torsion subgroup
     //  (by looking at the reduction at a few good primes).
-    tb := TorsionBound(J, torsion_bound);
-    tb1 := J`TorsionBound[3];
+    tb := myTorsionBound(J, torsion_bound);
+    plist := J`TorsionBound[3]; // primes used 
     fact := Factorization(tb);
     vprintf JacHypTorsion: " Torsion Bound = %o, factored: %o\n",tb,fact;
     // Initialize data for group.
@@ -510,7 +581,7 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 10)
         // Find p such that J(F_p) has minimal p-valuation and p ne q.
         if flaglt then
             minval := 1000;
-            for t in tb1 do // we also require that J(F_p) contains a point (Section 5.5)
+            for t in plist do // we also require that J(F_p) contains a point (Section 5.5)
                 if Valuation(t[2],q) lt minval and 
                                     #Points(Curve(BaseExtend(J, GF(t[1])))) ne 0 and t[1] ne q then
                     p := t[1];
@@ -519,8 +590,8 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 10)
                 end if;
             end for;
         else
-      	    e, pos := Min([ Valuation(t[2],q) + (t[1] eq q select 1000 else 0) : t in tb1]);
-            p := tb1[pos][1];
+      	    e, pos := Min([ Valuation(t[2],q) + (t[1] eq q select 1000 else 0) : t in plist]);
+            p := plist[pos][1];
         end if;
         vprintf JacHypTorsion: "   Using prime %o; %o-torsion has order %o^%o\n",p,q,q,e;
         pbound := Ceiling(bound1/Log(p));
