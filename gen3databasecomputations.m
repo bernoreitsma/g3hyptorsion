@@ -24,13 +24,13 @@ while true do
 	seppols := Split(pols, ",");
 	f, h := Explode([eval seppols[1], eval seppols[2]]);
 	C := SimplifiedModel(HyperellipticCurve(f, h));
+        f := HyperellipticPolynomials(C);
         bad := BadPrimes(C);
         nprimes := #[p : p in PrimesInInterval(2,100) | p notin bad];
 	J := Jacobian(C);
-        tb := TorsionBound(J, nprimes);
-	G:= myTorsionSubgroup(J);
+        tb := myTorsionBound(J, nprimes);
+	G := myTorsionSubgroup(J);
         invs := InvariantFactors(G);
-        f := HyperellipticPolynomials(C);
         if #G lt tb then
           Append(~bigger, <f, tb, #G, invs>);
         end if;
@@ -60,7 +60,6 @@ only_simple := [];
 split := [];
 only_split := [];
 for i := 1 to #groups do
-  "group", groups[i];
   simple_found := false;
   split_found := false;
   j := 1;
