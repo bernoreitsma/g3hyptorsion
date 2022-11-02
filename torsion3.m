@@ -150,7 +150,7 @@ intrinsic myTorsionBound(J::JacHyp, n::RngIntElt) -> RngIntElt, SeqEnum
         else 
           ptsC := Points(Cp);
           if #ptsC eq 0 then 
-           /vprint JacHypTorsion: "No points on curve over Fp, can't compute group structure; skipping prime", p;
+           vprint JacHypTorsion: "No points on curve over Fp, can't compute group structure; skipping prime", p;
             continue; 
           end if; 
           // Now send a non-Weierstrass point to infinity.
