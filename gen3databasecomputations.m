@@ -3,7 +3,7 @@ Attach("torsion3.m");
 Attach("transformations.m");
 
 input := Open("gce_genus3_hyperelliptic.txt", "r");
-output := Open("output_100.txt", "w");
+output := Open("output.txt", "w");
 
 S<x> := PolynomialRing(Rationals());
 
@@ -92,4 +92,50 @@ fprintf output, " //group structures showing up for geometrically simple Jacobia
 fprintf output, " //group structures showing up for Jacobians that are not known to be geometrically simple: \n probably_split := %o;\n\n", split;
 fprintf output, " //group structures showing up only for geometrically simple Jacobians: \n only_simple := %o;\n\n", only_simple;
 fprintf output, "//group structures showing up only for Jacobians that are not known to be geometrically simple: \n only_probably_split := %o;\n\n", only_split;
-fprintf output, " //bigger: \n bigger := %o;\n\n", bigger;
+fprintf output, " //curves with torsion order smaller than the upper bound obtained from considering good primes below 100: \n bigger := %o;\n\n", bigger;
+
+for i in [1..#bigger] do 
+"i", i;
+  t := bigger[i];
+  f := t[1];
+  C := HyperellipticCurve(f);
+  bad := BadPrimes(C);
+  nprimes := #[p : p in PrimesInInterval(2,1000) | p notin bad];
+  tb := myTorsionBound(Jacobian(C), nprimes);
+  if tb lt t[2] then 
+    bigger[i,2] := tb;
+  end if;
+end for;
+
+for i in [1..#bigger] do
+  t := bigger[i];
+  if t[3] ne t[2] then
+    Append(~bigger1000, t);
+  end if;
+end for;
+
+quots := [t[2]/t[3] : t in bigger1000];
+L := [];
+M := [];
+N := [];
+O := [];
+load "howe_zhu.m";
+
+for q in Sort(SetToSequence(SequenceToSet(quots))) do
+  Append(~L, <q, #[r : r in quots | r eq q]>);
+  ts := [t : t in bigger1000 | t[2]/t[3] eq q];
+  Append(~M, <q, ts >);
+  nauts := [#AutomorphismGroup(HyperellipticCurve(t[1])) : t in ts];
+  Append(~N, <q, nauts>);
+  simple := [];
+  for i in [1..#ts] do
+    if nauts[i] ne 2 then
+      Append(~simple, false);
+    else
+      f := ts[i,1];
+      Append(~simple, HasAbsolutelyIrreducibleJacobian(HyperellipticCurve(f), 50));
+    end if;
+  end for;
+  Append(~O, <q, simple>);
+end for;
+
