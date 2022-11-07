@@ -127,15 +127,18 @@ intrinsic myTorsionBound(J::JacHyp, n::RngIntElt) -> RngIntElt, SeqEnum
     if assigned J`TorsionBound then
       bound := J`TorsionBound[1];
       plist := J`TorsionBound[3];
+      inv_factors := J`TorsionBound[4];
+      factors := J`TorsionBound[5];
       p := plist[#plist][1];
       s := J`TorsionBound[2]+1; // index of next element of pl to look at
     else
       bound := 0;
       plist := [];
+      inv_factors := [];
+      factors := [];
       p := 2; 
       s := 1;
     end if;
-    factors := [];
     for i := s to n do p := NextPrime(p);
       while disc mod p eq 0 do p := NextPrime(p); end while;
       try 
@@ -164,16 +167,21 @@ intrinsic myTorsionBound(J::JacHyp, n::RngIntElt) -> RngIntElt, SeqEnum
       end try;
       Append(~factors, InvariantFactors(group));
       bound := Gcd(bound, #group);
-      Append(~plist, <p, #group, factors>);
+      Append(~plist, <p, #group, InvariantFactors(group)>);
       if bound eq 1 then break; end if;
     end for;
     inv_factors := [];
-    N := Min([#t : t in factors]);
+    if IsEmpty(factors) then 
+      N := 0;
+    else
+      N := Min([#t : t in factors]);
+    end if;
     for i := 1 to N do
       inv_factors[i] := GCD([t[#t-N+i] : t in factors]);
     end for;
-    J`TorsionBound := <&*inv_factors, #plist, plist, inv_factors, factors>;
-    return &*inv_factors;
+    bd := IsEmpty(inv_factors) select 1 else &*inv_factors;
+    J`TorsionBound := <bd, #plist, plist, inv_factors, factors>;
+    return bd;
 end intrinsic;
 
 // Explicitly computes the rational 2-torsion subgroup 
