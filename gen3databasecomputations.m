@@ -11,7 +11,8 @@ lc := 0;
 
 groups := [];
 curves := [];
-bigger := [];
+bigger100 := [];
+bigger1000 := [];
 
 while true do
 	lc +:= 1;
@@ -32,7 +33,7 @@ while true do
 	G := myTorsionSubgroup(J);
         invs := InvariantFactors(G);
         if #G lt tb then
-          Append(~bigger, <f, tb, #G, invs>);
+          Append(~bigger100, <f, tb, #G, invs>);
         end if;
         ind := Index(groups, invs);
         if invs notin groups then
@@ -92,27 +93,30 @@ fprintf output, " //group structures showing up for geometrically simple Jacobia
 fprintf output, " //group structures showing up for Jacobians that are not known to be geometrically simple: \n probably_split := %o;\n\n", split;
 fprintf output, " //group structures showing up only for geometrically simple Jacobians: \n only_simple := %o;\n\n", only_simple;
 fprintf output, "//group structures showing up only for Jacobians that are not known to be geometrically simple: \n only_probably_split := %o;\n\n", only_split;
-fprintf output, " //curves with torsion order smaller than the upper bound obtained from considering good primes below 100: \n bigger := %o;\n\n", bigger;
+fprintf output, " //curves with torsion order smaller than the upper bound obtained from considering good primes below 100: \n bigger100 := %o;\n\n", bigger100;
 
-for i in [1..#bigger] do 
+for i in [1..#bigger100] do 
 "i", i;
-  t := bigger[i];
+  t := bigger100[i];
   f := t[1];
   C := HyperellipticCurve(f);
   bad := BadPrimes(C);
   nprimes := #[p : p in PrimesInInterval(2,1000) | p notin bad];
   tb := myTorsionBound(Jacobian(C), nprimes);
   if tb lt t[2] then 
-    bigger[i,2] := tb;
+    bigger100[i,2] := tb;
   end if;
 end for;
 
-for i in [1..#bigger] do
-  t := bigger[i];
+for i in [1..#bigger100] do
+  t := bigger100[i];
   if t[3] ne t[2] then
     Append(~bigger1000, t);
   end if;
 end for;
+
+
+fprintf output, " //curves with torsion order smaller than the upper bound obtained from considering good primes below 1000: \n bigger1000 := %o;\n\n", bigger1000;
 
 quots := [t[2]/t[3] : t in bigger1000];
 L := [];
