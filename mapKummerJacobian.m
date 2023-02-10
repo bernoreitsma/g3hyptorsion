@@ -173,38 +173,20 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
         sumy1y2sq := f8*sumx1x2[8] + f7*sumx1x2[7] + f6*sumx1x2[6] + f5*sumx1x2[5]
             + f4*sumx1x2[4] + f3*sumx1x2[3] + f2*sumx1x2[2] + f1*sumx1x2[1] + 2*f0;
         if not IsSquare(sumy1y2sq + y1y2_t_2) then return false; end if;
-        // need y1+y2 in k, so y_1^2 + y_2^2 + 2*y1y2
+        // need y1+y2 in k, so y_1^2 + y_2^2 + 2*y1y2 in k^2
         Db := sumy1y2sq - y1y2_t_2; // y_1^2 + y_2^2 - 2*y1y2
         //"Da=", Da; "Db=", Db;
         if Da eq 0 then return true; end if;
         return IsSquare(Db/Da);
-        /*
-        issqda := IsSquare(Da);
-        issqdb := IsSquare(Db);
-        
-        if issqda and issqdb then
-            return true;
-        elif (not issqda) and issqdb then
-            return Db eq 0;
-        elif (not issqdb) and issqda then
-            return Da eq 0;
-        else
-            R<x> := PolynomialRing(Rationals());
-            quadr_a := NumberField(x^2 - Da);
-            quadr_b := NumberField(x^2 - Db);
-            is_isomorphic, _ := IsIsomorphic(quadr_a, quadr_b);
-	    return is_isomorphic;
-        end if;
-        */
     else
-    assert xiseq[3] eq 0 and xiseq[4] eq 0;
-    if xiseq[5] eq 0 then
-        if xiseq[6] eq 0 and xiseq[7] eq 0 then
-            return true; // origin
-        else
-            assert xiseq[6] eq 0; // 2*infty_1 - m or 2*infty_2 - m
-            return #PointsAtInfinity(C) eq 2;
-        end if;
+        assert xiseq[3] eq 0 and xiseq[4] eq 0;
+        if xiseq[5] eq 0 then
+            if xiseq[6] eq 0 and xiseq[7] eq 0 then
+                return true; // origin
+            else
+                assert xiseq[6] eq 0; // 2*infty_1 - m or 2*infty_2 - m
+                return #PointsAtInfinity(C) eq 2;
+            end if;
         else // degree one affine point
             // jsm: modified 24-10-22
             x0 := -xiseq[6]/xiseq[5];
