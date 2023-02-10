@@ -133,7 +133,6 @@ intrinsic doesLiftToJacobian(C::CrvHyp, P::Pt : twist := 1) -> SetIndx[JacHypPt]
 {Decides whether a point lifts to the jacobian or not}
     Ct := twist eq 1 select C else QuadraticTwist(C, twist);
     xiseq := Eltseq(P);
-    //"P", P;
     f := HyperellipticPolynomials(C);
 	f0, f1, f2, f3, f4, f5, f6, f7, f8 := Explode(Coefficients(f));
     Pol := Parent(f);
