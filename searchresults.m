@@ -5639,19 +5639,20 @@ Append(~curves, [16*x^8 - 8*x^6 + 9*x^4 + 14*x^2 + 5, 16*x^8 - 16*x^7 + 60*x^6 -
 Append(~curves, [ x^8 + 16*x^4 + 36, x^8 + 8*x^6 + 8*x^5 + 24*x^4 + 48*x^3 + 40*x^2 +
 64*x + 32]);
 
-for i in [1..#curves] do
-  "i=", i;
+// Uncomment the following to check the torsion group computations.
+/*for i in [1..#curves] do
+//  "i=", i;
   for f in curves[i] do 
-    for j := 1 to 20 do
+ //   for j := 1 to 20 do // consistency check
       A := myTorsionSubgroup(Jacobian(HyperellipticCurve(f)));
       invs := InvariantFactors(A);
       if invs ne groups[i] then
         "bug!", groups[i], invs,  f;
       end if;
-    end for;
+//    end for;
   end for;
 end for;
-      
+*/      
   
 
 
@@ -5699,19 +5700,34 @@ end for;
 "largest element order", Max(largest_orders);
 max_elt_ord := Max(largest_orders);
 "curves with largest element order", curves[Index(orders, max_elt_ord)];
-"geometrically simple?", [check_simple(f, 50): f in curves[Index(orders, max_elt_ord)]];
+max_curves := curves[Index(groups, [max_elt_ord])];
+"curves with second largest element order", max_curves;
+"geometrically simple?", [check_simple(f, 50): f in max_curves];
 
 "---";
 snd_elt_ord := Max([n : n in largest_orders | n lt max_elt_ord]);
 "second largest element order", snd_elt_ord;
-"curves with second largest element order", curves[Index(orders, snd_elt_ord)];
-"geometrically simple?", [check_simple(f, 50): f in curves[Index(orders, snd_elt_ord)]];
+snd_curves := curves[Index(groups, [snd_elt_ord])];
+"curves with second largest element order", snd_curves;
+"geometrically simple?", [check_simple(f, 50): f in snd_curves];
 
 "---";
 thrd_elt_ord := Max([n : n in largest_orders | n lt snd_elt_ord]);
 "third largest element order", thrd_elt_ord;
-"curves with third largest element order", curves[Index(orders, thrd_elt_ord)];
-"geometrically simple?", [check_simple(f, 50): f in curves[Index(orders, thrd_elt_ord)]];
+thrd_curves := curves[Index(groups, [thrd_elt_ord])];
+"curves with second largest element order", thrd_curves;
+"geometrically simple?", // This shows that the Jacobian is not simple 
+[#AutomorphismGroup(HyperellipticCurve(f)) eq 2 : f in thrd_curves];
+
+
+"---";
+"third largest element order", thrd_elt_ord;
+ord60_indices := [i : i in [1..#groups] | 60 in groups[i]];
+curves60 := &cat [curves[i] : i in ord60_indices];
+"curves with a point of order 60", curves60;
+"geometrically simple?", // This shows that the Jacobians are not simple 
+[#AutomorphismGroup(HyperellipticCurve(f)) eq 2 : f in curves60];
+
 
 // Compare with Nichols, Table 3.2 (p 34)
 geom_simple := [];
@@ -5787,3 +5803,4 @@ end for;
 C_91 := HyperellipticCurve(non_isom_crvs_91[1]);
 ptsC:=Points(C_91:Bound:=100); ptsC;
 P := ptsC[7]-ptsC[6]; Order(P);
+
