@@ -20,7 +20,7 @@ import "KummerArithmetic.m": MyPseudoAdd;
 
 // Computes c_{\infty} (Section 3.4)
 
-intrinsic HeightConstAtInfty(f::RngUPolElt : eps := 0.0001) -> FldReElt, SeqEnum
+intrinsic HeightConstAtInfty(f::RngUPolElt : eps := 0.01) -> FldReElt, SeqEnum  
 {}
     if Degree(f) eq 7 then
         partitions := [<s, {1..7} diff s> : s in Subsets({1..7}, 3)];
@@ -99,11 +99,11 @@ end intrinsic;
 
 /* This computes a height bound \beta such as in (Theorem 3.15)*/
 
-intrinsic HeightConstantG3(J::JacHyp : eps := 0.0001) -> FldReElt, FldReElt
+intrinsic HeightConstantG3(J::JacHyp : eps := 0.01) -> FldReElt, FldReElt
 {If J is the Jacobian of a genus 3 curve defined over the rationals,
  of the form  y^2 = f(x)  with integral coefficients, this computes
  a real number c such that  h_K(P) le h(P) + c  for all P in J(Q),
- where h_K is the naive logarithmic height got from the Kummer surface
+ where h_K is the naive logarithmic height got from the Kummer variety
  and h is the canonical height on J.}
     C := Curve(J);
     require Genus(C) eq 3 and CoefficientRing(C) cmpeq Rationals():

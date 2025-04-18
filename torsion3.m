@@ -508,7 +508,7 @@ This function translates almost immediately to the genus 3 case, but
 there are some issues for curves where Jacobian arithmetic is not implemented.*/
 
 // Algorithm 4.22.
-intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
+intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20, eps := 0.01)
     -> GrpAb, Map
 {Finds the rational torsion subgroup of J. The curve of J must have genus 2
  and be defined over the rationals and have form  y^2 = f(x)  with integral 
@@ -536,7 +536,7 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
         D := DI; trans := trans * DStrans * DItrans;
         JD := Jacobian(D);
         vprint JacHypTorsion: "Considering isomorphic odd degree model...";
-        G, iso := myTorsionSubgroup(JD);
+        G, iso := myTorsionSubgroup(JD : eps := eps);
         /*transinv := Inverse(trans);
         Jtransinv := map<JD -> J | P :-> Evaluate(transinv, P)>;*/
         return G; //, iso*Jtransinv;
@@ -545,6 +545,7 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
 
     // Else we  prefer an even degree model with rational points 
     // at infinity
+    /*
     if flaglt then
         // By the above, there are no rational Weierstrass points
         pts := Points(C : Bound := 1000);
@@ -561,8 +562,26 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
             return G;
         end if;
     end if;
+    */
 
-    bound := HeightConstantG3(J : eps := 0.01);
+    // Get a bound for the order of the torsion subgroup
+    //  (by looking at the reduction at a few good primes).
+    tb := myTorsionBound(J, torsion_bound);
+    plist := J`TorsionBound[3]; // primes used 
+    fact := Factorization(tb);
+    vprintf JacHypTorsion: " Torsion Bound = %o, factored: %o\n",tb,fact;
+    if IsOne(tb) then
+        G<[P]> := AbelianGroup([]);   
+        J`TorsionGroup := G; 
+        vprint JacHypTorsion: " Torsion subgroup is trivial";
+        if Degree(f) eq 7 then 
+            iso := map< G -> J | g :-> J!0>;
+            J`TorsionMap := iso;
+            return G, iso;
+        end if;
+        return G;
+    end if;
+    bound := HeightConstantG3(J : eps := eps);
     // This bounds the logarithmic naive height of the torsion points
     // jsm: made eps smaller. This leads to a significant speed-up
     // at a small loss.
@@ -570,12 +589,7 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
     Bound := Exp(bound);           // non-log height bound
     // changed in order to be safe for now.
     bound1 := Log(2048.0) + 2*bound; // logarithmic bound for p-adic precision (section 4.4).
-    // Get a bound for the order of the torsion subgroup
-    //  (by looking at the reduction at a few good primes).
-    tb := myTorsionBound(J, torsion_bound);
-    plist := J`TorsionBound[3]; // primes used 
-    fact := Factorization(tb);
-    vprintf JacHypTorsion: " Torsion Bound = %o, factored: %o\n",tb,fact;
+
     // Initialize data for group.
     ed := [];      // elementary divisors
     gL := [ J | ]; // generators
@@ -741,31 +755,31 @@ intrinsic myTorsionSubgroup(J::JacHyp : torsion_bound := 20)
             q, invs;
         if Degree(f) eq 7 then
             if not IsEmpty(Tgens) then
-            // This `if' is necessary since Magma 2.4 barfs on
-            //  hom< G -> G | [G|] > where G := FreeAbelianGroup(0)
-            vprintf JacHypTorsion:
-                "  Determining generators for the %o-part...\n",q;
-            qqmap := hom< FreeAbelianGroup(#Tgens) -> Tcurr | Tgens >;
-            Lp1 := [ &+[ s[j]*Tgimages[j] : j in [1..#s] ]
-                where s :=  Eltseq(Tcurr.i @@ qqmap)
-                : i in [1..#invs] ];
-            if GetVerbose("JacHypTorsion") ge 2 then
-                print "   Generators with their orders:";
-                for i := 1 to #invs do
-                    print "    ", Lp1[i], ",  of order", invs[i];
-                end for;
-            end if; // GetVerbose("JacHypTorsion") ge 2
-	 
-            // Now put q-part together with what we've got so far.
-            d := #invs-#ed;
-            vprintf JacHypTorsion:
-                "  Combining %o-part with what we've already got...\n",q;
-            if d gt 0 then
-                ed := invs[[1..d]] cat [ Lcm(ed[i], invs[i+d]) : i in [1..#ed] ];
-                gL := Lp1[[1..d]] cat [ gL[i] + Lp1[i+d] : i in [1..#gL] ];
-            else
-                ed := ed[[1..-d]] cat [ Lcm(ed[i-d], invs[i]) : i in [1..#invs] ];
-                gL := gL[[1..-d]] cat [ gL[i-d] + Lp1[i] : i in [1..#Lp1] ];
+                // This `if' is necessary since Magma 2.4 barfs on
+                //  hom< G -> G | [G|] > where G := FreeAbelianGroup(0)
+                vprintf JacHypTorsion:
+                    "  Determining generators for the %o-part...\n",q;
+                qqmap := hom< FreeAbelianGroup(#Tgens) -> Tcurr | Tgens >;
+                Lp1 := [ &+[ s[j]*Tgimages[j] : j in [1..#s] ]
+                    where s :=  Eltseq(Tcurr.i @@ qqmap)
+                    : i in [1..#invs] ];
+                if GetVerbose("JacHypTorsion") ge 2 then
+                    print "   Generators with their orders:";
+                    for i := 1 to #invs do
+                        print "    ", Lp1[i], ",  of order", invs[i];
+                    end for;
+                end if; // GetVerbose("JacHypTorsion") ge 2
+       
+                // Now put q-part together with what we've got so far.
+                d := #invs-#ed;
+                vprintf JacHypTorsion:
+                    "  Combining %o-part with what we've already got...\n",q;
+                if d gt 0 then
+                    ed := invs[[1..d]] cat [ Lcm(ed[i], invs[i+d]) : i in [1..#ed] ];
+                    gL := Lp1[[1..d]] cat [ gL[i] + Lp1[i+d] : i in [1..#gL] ];
+                else
+                    ed := ed[[1..-d]] cat [ Lcm(ed[i-d], invs[i]) : i in [1..#invs] ];
+                    gL := gL[[1..-d]] cat [ gL[i-d] + Lp1[i] : i in [1..#Lp1] ];
                 end if;
             end if; // not IsEmpty(Tgens)
             vprint JacHypTorsion: "  Current invariants:",ed;
